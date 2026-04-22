@@ -150,7 +150,7 @@
                 },
                 ACC_DATE: {
                     id: "日期判定",
-                    question: "請比對系統中的核定與失敗日期：",
+                    question: "請比對系統中的核定與請款失敗日期：",
                     options: [
                         { label: "核定日期 > 請款失敗日期", next: "CURRENCY_PICK", color: "bg-emerald-600", icon: "calendar" },
                         { label: "核定日期 <= 請款失敗日期", next: "RES_ACC_T3", color: "bg-amber-600", icon: "history" }
@@ -237,14 +237,14 @@
             };
 
             const RESULTS = {
-                RES_ACC_WAIT: { title: "等待核定中", badge: "進度暫停", color: "text-amber-500", icon: "alert", desc: "保單目前尚未完成核定，請在保單核定後重新進行診斷。" },
+                RES_ACC_WAIT: { title: "等待核定中", badge: "進度暫停", color: "text-amber-500", icon: "alert", desc: "保單目前尚未完成核定，請在保單核定後，重新進行診斷。" },
                 RES_ACC_T3: { title: "系統作業等待中", badge: "T+3個工作日發動", color: "text-amber-600", icon: "history", desc: "由於剛扣款失敗，系統將保留作業緩衝時間。預計於受理請款失敗日後第 3 個工作天自動發動。若需提前，請聯繫審查部重新壓核定。" },
                 MANUAL_INSTANT: { title: "即時扣款時效預估", badge: "依操作時間批次回傳", color: "text-emerald-500", icon: "success", desc: "符合即時扣款三要件。請依操作時間參考批次回傳（12:00 或 15:30，若過 15:30 則隔日中午回傳）。請務必提醒保戶確認帳戶餘額充足。" },
-                MANUAL_DAILY: { title: "一般流程 (每日扣款)", badge: "2個工作日回傳", color: "text-blue-500", icon: "calendar", desc: "本案採一般流程發動。該行庫為每日扣款，發動後需等待銀行 2 個工作天處理資料，2個工作天後即可在系統查看結果。" },
+                MANUAL_DAILY: { title: "一般流程 (每日扣款)", badge: "2個工作日銀行回傳", color: "text-blue-500", icon: "calendar", desc: "本案採一般流程發動。該行庫為每日扣款，發動後需等待銀行 2 個工作天處理資料，2個工作天後即可在系統查看結果。" },
                 MANUAL_NINTH: { title: "一般流程 (逢九扣款)", badge: "下次逢九回傳", color: "text-slate-400", icon: "history", desc: "本案採一般流程發動。該行庫屬逢九扣款，需等待最近的 9/19/29 日發動扣款，當日扣款完成後即可在系統查看最終結果。" },
-                AUTO_INSTANT: { title: "系統自動再扣 (即時)", badge: "T+3個工作日回傳", color: "text-indigo-600", icon: "zap", desc: "由系統自動發動扣款，預計於三個工作天後的中午 12 點發動即時扣款，當天銀行才會回傳結果。" },
-                AUTO_DAILY: { title: "系統自動再扣 (每日)", badge: "總時效約 T+5", color: "text-blue-600", icon: "calendar", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程發動後續再過兩個工作天，等待銀行會傳結果總時效約五個工作天。" },
-                AUTO_NINTH: { title: "系統自動再扣 (逢九)", badge: "等待下次逢九作業", color: "text-slate-500", icon: "history", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程，並在最近一次的逢九完成扣款作業。" }
+                AUTO_INSTANT: { title: "系統自動再扣 (即時)", badge: "T+3個工作日銀行回傳", color: "text-indigo-600", icon: "zap", desc: "由系統自動發動扣款，預計於三個工作天後的中午 12 點發動即時扣款，當天銀行將會回傳結果。" },
+                AUTO_DAILY: { title: "系統自動再扣 (每日)", badge: "T+5個工作銀行回傳", color: "text-blue-600", icon: "calendar", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程，發動後再過兩個工作天，等待銀行會傳結果，總時長約五個工作天。" },
+                AUTO_NINTH: { title: "系統自動再扣 (逢九)", badge: "等待下次逢九作業", color: "text-slate-500", icon: "history", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程，並在發動日的最近一次逢九完成扣款作業。" }
             };
 
             const stepData = STEPS[currentStep];
@@ -267,7 +267,7 @@
                                 <h1 className="font-bold text-white tracking-tight text-base md:text-lg">新契約請款智慧助手</h1>
                                 <div className="flex items-center gap-1.5">
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">發動請款時間預估 v45</span>
+                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">發動請款時間預估</span>
                                 </div>
                             </div>
                         </div>
@@ -312,7 +312,7 @@
                             <div className="flex flex-col animate-up">
                                 <h2 className="text-lg md:text-xl font-black text-slate-800 mb-2 tracking-tight">請搜尋扣款行庫</h2>
                                 <p className="text-sm text-slate-400 mb-8">
-                                    幣別：{params.currency === 'TWD' ? '台幣' : '外幣'} (僅顯示支援之行庫)
+                                    幣別：{params.currency === 'TWD' ? '台幣' : '外幣'} (僅顯示支援之行庫）</p>目前僅列出部分銀行，如未找到，請輸入銀行代碼（如 007）或名稱關鍵字搜尋。
                                 </p>
                                 <div className="relative mb-6">
                                     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">

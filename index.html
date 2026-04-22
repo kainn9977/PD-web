@@ -237,14 +237,14 @@
             };
 
             const RESULTS = {
-                RES_ACC_WAIT: { title: "等待核定中", badge: "進度暫停", color: "text-amber-500", icon: "alert", desc: "保單目前尚未完成核定，請在保單核定後，重新進行診斷。" },
-                RES_ACC_T3: { title: "系統作業等待中", badge: "T+3個工作日發動", color: "text-amber-600", icon: "history", desc: "由於剛扣款失敗，系統將保留作業緩衝時間。預計於受理請款失敗日後第 3 個工作天自動發動。若需提前，請聯繫審查部重新壓核定。" },
-                MANUAL_INSTANT: { title: "即時扣款時效預估", badge: "依操作時間批次回傳", color: "text-emerald-500", icon: "success", desc: "符合即時扣款三要件。請依操作時間參考批次回傳（12:00 或 15:30，若過 15:30 則隔日中午回傳）。請務必提醒保戶確認帳戶餘額充足。" },
-                MANUAL_DAILY: { title: "一般流程 (每日扣款)", badge: "2個工作日銀行回傳", color: "text-blue-500", icon: "calendar", desc: "本案採一般流程發動。該行庫為每日扣款，發動後需等待銀行 2 個工作天處理資料，2個工作天後即可在系統查看結果。" },
-                MANUAL_NINTH: { title: "一般流程 (逢九扣款)", badge: "下次逢九回傳", color: "text-slate-400", icon: "history", desc: "本案採一般流程發動。該行庫屬逢九扣款，需等待最近的 9/19/29 日發動扣款，當日扣款完成後即可在系統查看最終結果。" },
-                AUTO_INSTANT: { title: "系統自動再扣 (即時)", badge: "T+3個工作日銀行回傳", color: "text-indigo-600", icon: "zap", desc: "［T=扣款失敗日］由系統自動發動扣款，預計於三個工作天後的中午 12 點發動即時扣款，當天銀行將會回傳結果。" },
-                AUTO_DAILY: { title: "系統自動再扣 (每日)", badge: "T+5個工作日銀行回傳", color: "text-blue-600", icon: "calendar", desc: "［T=扣款失敗日］由系統自動發動扣款，預計將於三個工作天後發動一般流程，發動後再過兩個工作天，等待銀行會傳結果，總時長約五個工作天。" },
-                AUTO_NINTH: { title: "系統自動再扣 (逢九)", badge: "等待下次逢九作業", color: "text-slate-500", icon: "history", desc: "由系統自動發動扣款，預計將於扣款失敗日後加三個工作天發動一般流程，並在發動日的最近一次逢九完成扣款作業。" }
+                RES_ACC_WAIT: { title: "等待核定中", badge: "進度暫停", color: "text-amber-500", icon: "alert", desc: "保單目前尚未完成核定，請在保單核定後，再重新查詢。" },
+                RES_ACC_T3: { title: "系統作業等待中", badge: "T+3個工作日發動", color: "text-amber-600", icon: "history", desc: "由於剛扣款失敗，系統將保留作業緩衝時間。預計於受理請款失敗日後第 3 個工作天自動發動請款作業（進行即時或一般扣款作業）。若需提前扣款，請聯繫審查部重新壓核定。" },
+                MANUAL_INSTANT: { title: "即時扣款時效預估", badge: "依操作時間批次回傳", color: "text-emerald-500", icon: "success", desc: "符合即時扣款三要件。請依核定時間或重新請款時間，參考批次回傳的時間（12:00 或 15:30，若過 15:30 則隔日中午回傳）。請務必提醒保戶確認帳戶餘額充足。" },
+                MANUAL_DAILY: { title: "一般流程 (每日扣款)", badge: "2個工作日銀行回傳", color: "text-blue-500", icon: "calendar", desc: "本案採一般流程發動。該行庫為每日扣款，發動請款後需等待 2 個工作天處理資料，2個工作天後即可在系統查看扣款結果。" },
+                MANUAL_NINTH: { title: "一般流程 (逢九扣款)", badge: "下次逢九回傳", color: "text-slate-400", icon: "history", desc: "本案採一般流程發動。該行庫屬逢九扣款，需等待最近的 9/19/29 日發動扣款，當日扣款完成後即可在系統查看結果。" },
+                AUTO_INSTANT: { title: "系統自動再扣 (即時)", badge: "T+3個工作日銀行回傳", color: "text-indigo-600", icon: "zap", desc: "［T=扣款失敗日］由系統自動發動扣款，預計於三個工作天後的中午 12 點發動即時扣款，當天銀行將會回傳扣款結果。" },
+                AUTO_DAILY: { title: "系統自動再扣 (每日)", badge: "T+5個工作日銀行回傳", color: "text-blue-600", icon: "calendar", desc: "［T=扣款失敗日］由系統自動發動扣款，預計將於三個工作天後發動請款，發動後需2個工作天等待銀行回傳扣款結果，總時長約五個工作天。" },
+                AUTO_NINTH: { title: "系統自動再扣 (逢九)", badge: "等待下次逢九作業", color: "text-slate-500", icon: "history", desc: "由系統自動發動扣款，預計將於扣款失敗日後加三個工作天發動請款，並在發動日的最近一次逢九完成扣款作業。" }
             };
 
             const stepData = STEPS[currentStep];
@@ -267,7 +267,7 @@
                                 <h1 className="font-bold text-white tracking-tight text-base md:text-lg">新契約請款智慧助手</h1>
                                 <div className="flex items-center gap-1.5">
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">發動請款時間預估</span>
+                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">扣款時間預估</span>
                                 </div>
                             </div>
                         </div>

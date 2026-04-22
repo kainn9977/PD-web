@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新契約請款智慧助手 v43</title>
+    <title>新契約請款智慧助手 v45</title>
     <!-- 基礎佈局與渲染引擎 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -57,6 +57,7 @@
     <script type="text/babel">
         const { useState, useMemo } = React;
 
+        // --- 全行庫邏輯數據 (v45 修正將來銀行支援即時扣款) ---
         const BANK_DATABASE = [
             {"code": "004", "name": "台灣銀行", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
             {"code": "005", "name": "土地銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
@@ -91,7 +92,7 @@
             {"code": "810", "name": "星展銀行", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
             {"code": "812", "name": "台新銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
             {"code": "816", "name": "安泰銀行", "isInstant": false, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
-            {"code": "823", "name": "將來銀行", "isInstant": true},
+            {"code": "823", "name": "將來銀行", "isInstant": true, "twdDaily": true, "twdNinth": false}, // 修正為支援即時扣款
             {"code": "ACH", "name": "農漁會/信用合作社", "isInstant": false, "twdDaily": true, "twdNinth": false},
             {"code": "822", "name": "中國信託", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false}
         ];
@@ -129,7 +130,7 @@
             });
             const [searchTerm, setSearchTerm] = useState('');
 
-            // --- 導引流程邏輯 (v43 修正日期判定) ---
+            // --- 導引流程邏輯 ---
             const STEPS = {
                 HOME: {
                     id: "診斷起始",
@@ -204,11 +205,23 @@
                 setParams({ currency: '', auth: '', isAuto: false });
             };
 
+            // --- 核心過濾邏輯：幣別支援判定 ---
             const filteredBanks = useMemo(() => {
+                let base = BANK_DATABASE;
+                
+                if (params.currency === 'FOREIGN') {
+                    // 外幣不支援清單
+                    const unsupportedForeign = ['048', '081', '101', '103', '147', '823', '700', 'ACH'];
+                    base = base.filter(b => !unsupportedForeign.includes(b.code));
+                } else if (params.currency === 'TWD') {
+                    // 台幣不支援清單 (v45 移除 823 的過濾)
+                    base = base.filter(b => b.code !== 'ACH_DISABLED_EXAMPLE'); 
+                }
+
                 const term = searchTerm.toLowerCase();
-                if (!term) return BANK_DATABASE.slice(0, 8);
-                return BANK_DATABASE.filter(b => b.code.includes(term) || b.name.includes(term)).slice(0, 10);
-            }, [searchTerm]);
+                if (!term) return base.slice(0, 10);
+                return base.filter(b => b.code.includes(term) || b.name.includes(term)).slice(0, 12);
+            }, [searchTerm, params.currency]);
 
             const selectBank = (bank) => {
                 let finalType = 'NINTH'; 
@@ -229,9 +242,9 @@
                 MANUAL_INSTANT: { title: "即時扣款時效預估", badge: "依操作時間批次回傳", color: "text-emerald-500", icon: "success", desc: "符合即時扣款三要件。請依操作時間參考批次回傳（12:00 或 15:30，若過 15:30 則隔日中午回傳）。請務必提醒保戶確認帳戶餘額充足。" },
                 MANUAL_DAILY: { title: "一般流程 (每日扣款)", badge: "2個工作日回傳", color: "text-blue-500", icon: "calendar", desc: "本案採一般流程發動。該行庫為每日扣款，發動後需等待銀行 2 個工作天處理資料，2個工作天後即可在系統查看結果。" },
                 MANUAL_NINTH: { title: "一般流程 (逢九扣款)", badge: "下次逢九回傳", color: "text-slate-400", icon: "history", desc: "本案採一般流程發動。該行庫屬逢九扣款，需等待最近的 9/19/29 日發動扣款，當日扣款完成後即可在系統查看最終結果。" },
-                AUTO_INSTANT: { title: "系統自動再扣 (即時)", badge: "T+3個工作日回傳", color: "text-indigo-600", icon: "zap", desc: "由系統自動發動扣款，預計於三個工作天後的中午 12 點發動即時扣款，當天銀行將會回傳結果。" },
-                AUTO_DAILY: { title: "系統自動再扣 (每日)", badge: "T+5個工作日回傳", color: "text-blue-600", icon: "calendar", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程，發動後需等待約兩個工作天，等待銀行會傳結果，總時效約五個工作天。" },
-                AUTO_NINTH: { title: "系統自動再扣 (逢九)", badge: "等待下次逢九扣款", color: "text-slate-500", icon: "history", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程，並在最近一次的逢九完成扣款作業。" }
+                AUTO_INSTANT: { title: "系統自動再扣 (即時)", badge: "T+3個工作日回傳", color: "text-indigo-600", icon: "zap", desc: "由系統自動發動扣款，預計於三個工作天後的中午 12 點發動即時扣款，當天銀行才會回傳結果。" },
+                AUTO_DAILY: { title: "系統自動再扣 (每日)", badge: "總時效約 T+5", color: "text-blue-600", icon: "calendar", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程發動後續再過兩個工作天，等待銀行會傳結果總時效約五個工作天。" },
+                AUTO_NINTH: { title: "系統自動再扣 (逢九)", badge: "等待下次逢九作業", color: "text-slate-500", icon: "history", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程，並在最近一次的逢九完成扣款作業。" }
             };
 
             const stepData = STEPS[currentStep];
@@ -254,7 +267,7 @@
                                 <h1 className="font-bold text-white tracking-tight text-base md:text-lg">新契約請款智慧助手</h1>
                                 <div className="flex items-center gap-1.5">
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">發動請款時間預估</span>
+                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">發動請款時間預估 v45</span>
                                 </div>
                             </div>
                         </div>
@@ -298,12 +311,14 @@
                         ) : currentStep === 'BANK_SEARCH' ? (
                             <div className="flex flex-col animate-up">
                                 <h2 className="text-lg md:text-xl font-black text-slate-800 mb-2 tracking-tight">請搜尋扣款行庫</h2>
-                                <p className="text-sm text-slate-400 mb-8">若下方查無預待行庫，請直接輸入銀行代碼 (如 007) 或 名稱關鍵字</p>
+                                <p className="text-sm text-slate-400 mb-8">
+                                    幣別：{params.currency === 'TWD' ? '台幣' : '外幣'} (僅顯示支援之行庫)
+                                </p>
                                 <div className="relative mb-6">
                                     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                                         <SvgIcon name="search" className="w-5 h-5 text-slate-300" />
                                     </div>
-                                    <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="快速搜尋..." className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-lg focus:border-indigo-500 transition-all"/>
+                                    <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="快速搜尋銀行代碼或名稱..." className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-lg focus:border-indigo-500 transition-all"/>
                                 </div>
                                 <div className="space-y-2 max-h-[350px] overflow-y-auto no-scrollbar pr-2">
                                     {filteredBanks.map(b => (
@@ -318,6 +333,9 @@
                                             </div>
                                         </button>
                                     ))}
+                                    {filteredBanks.length === 0 && (
+                                        <div className="py-12 text-center text-slate-400 italic">查無符合此幣別之行庫資料，請確認搜尋關鍵字</div>
+                                    )}
                                 </div>
                             </div>
                         ) : resultData ? (
@@ -347,9 +365,9 @@
                                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter leading-none">即時扣款回傳批次</p>
                                 </div>
                                 <div className="space-y-3 text-[13px] font-bold text-slate-600">
-                                    <div className="flex justify-between border-b border-slate-50 pb-1"><span>12:00 前操作</span><span className="text-indigo-600 font-black">中午</span></div>
-                                    <div className="flex justify-between border-b border-slate-50 pb-1"><span>15:30 前操作</span><span className="text-indigo-600 font-black">下午</span></div>
-                                    <div className="flex justify-between"><span>15:30 後操作</span><span className="text-indigo-600 font-black">隔日中午</span></div>
+                                    <div className="flex justify-between border-b border-slate-50 pb-1"><span>12:00 前完成操作</span><span className="text-indigo-600 font-black">中午回傳</span></div>
+                                    <div className="flex justify-between border-b border-slate-50 pb-1"><span>15:30 前完成操作</span><span className="text-indigo-600 font-black">下午回傳</span></div>
+                                    <div className="flex justify-between"><span>15:30 後完成操作</span><span className="text-indigo-600 font-black">隔日中午</span></div>
                                 </div>
                             </div>
                             <div className="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100 shadow-inner text-left">
@@ -365,7 +383,7 @@
                             </div>
                         </div>
                         <p className="mt-8 text-[11px] font-black text-slate-300 tracking-[0.4em] uppercase text-center flex items-center justify-center gap-2">
-                            <SvgIcon name="landmark" className="w-3.5 h-3.5 opacity-30" /> 作業版本 v43.0
+                            <SvgIcon name="landmark" className="w-3.5 h-3.5 opacity-30" /> 核心作業邏輯校準版 v45.0
                         </p>
                     </footer>
                 </div>
@@ -377,5 +395,4 @@
     </script>
 </body>
 </html>
-
 

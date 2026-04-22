@@ -1,10 +1,11 @@
+```html
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新契約請款時效助手</title>
-    <!-- 基礎佈局：Tailwind CSS + React + Babel -->
+    <title>新契約請款智慧助手 v43</title>
+    <!-- 基礎佈局與渲染引擎 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -14,13 +15,12 @@
         
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f8fafc;
+            background-color: #f1f5f9;
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 寬版旗艦風格：寬度 900px，頂部對齊自然排列 */
         .app-shell {
             width: 100%;
             max-width: 900px; 
@@ -29,10 +29,9 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
-        /* 全域強制不換行指令 */
         .force-nowrap {
             white-space: nowrap !important;
             word-break: keep-all !important;
@@ -40,7 +39,7 @@
         }
 
         .animate-up {
-            animation: slideUp 0.35s ease-out forwards;
+            animation: slideUp 0.3s ease-out forwards;
         }
 
         @keyframes slideUp {
@@ -56,31 +55,62 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useMemo } = React;
 
-        // --- 全內嵌 SVG 組件：縮小尺寸，防止擠壓文字 ---
+        const BANK_DATABASE = [
+            {"code": "004", "name": "台灣銀行", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "005", "name": "土地銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "006", "name": "合作金庫", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "007", "name": "第一銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "008", "name": "華南銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "009", "name": "彰化銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "011", "name": "上海銀行", "isInstant": true, "twdDaily": false, "foreignDaily": true, "twdNinth": true, "foreignNinth": false},
+            {"code": "012", "name": "台北富邦", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "013", "name": "國泰世華", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "016", "name": "高雄銀行", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "017", "name": "兆豐銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "048", "name": "王道銀行", "isInstant": true, "twdDaily": true, "foreignDaily": false, "twdNinth": false, "foreignNinth": false},
+            {"code": "050", "name": "台灣企銀", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "052", "name": "渣打銀行", "isInstant": false, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "053", "name": "台中商銀", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "054", "name": "京城銀行", "isInstant": false, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "081", "name": "匯豐銀行", "isInstant": false, "twdDaily": true, "foreignDaily": false, "twdNinth": false, "foreignNinth": false},
+            {"code": "102", "name": "華泰銀行", "isInstant": false, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "103", "name": "臺灣新光", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "108", "name": "陽信銀行", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "118", "name": "板信商銀", "isInstant": false, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "147", "name": "三信商銀", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "700", "name": "中華郵政", "isInstant": false, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "803", "name": "聯邦銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "805", "name": "遠東銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "806", "name": "元大銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "807", "name": "永豐銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "808", "name": "玉山銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "809", "name": "凱基銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "812", "name": "台新銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
+            {"code": "816", "name": "安泰銀行", "isInstant": false, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
+            {"code": "822", "name": "中國信託", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false}
+        ];
+
         const SvgIcon = ({ name, className = "w-3.5 h-3.5", color = "currentColor" }) => {
             const paths = {
                 home: <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
-                landmark: <><path d="M3 22h18" /><path d="M6 18v-7" /><path d="M11 18v-7" /><path d="M16 18v-7" /><path d="M3 11l9-8 9 8" /><path d="M5 11h14" /></>,
+                search: <><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></>,
                 zap: <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />,
                 clock: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>,
                 calendar: <><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></>,
-                history: <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></>,
-                timer: <><line x1="10" y1="2" x2="14" y2="2" /><line x1="12" y1="14" x2="15" y2="11" /><circle cx="12" cy="14" r="8" /></>,
-                fileCheck: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><path d="m9 15 2 2 4-4" /></>,
-                calculator: <rect x="4" y="2" width="16" height="20" rx="2" />,
+                landmark: <><path d="M3 22h18" /><path d="M6 18v-7" /><path d="M11 18v-7" /><path d="M16 18v-7" /><path d="M3 11l9-8 9 8" /></>,
                 arrowLeft: <path d="M19 12H5M12 19l-7-7 7-7" />,
                 chevronRight: <path d="M9 18l6-6-6-6" />,
-                shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />,
-                check: <polyline points="20 6 9 17 4 12" />,
-                layers: <><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /></>,
                 success: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>,
-                warning: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>
+                alert: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>,
+                world: <><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>,
+                history: <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></>,
+                layers: <><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /></>
             };
             return (
                 <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    {paths[name]}
+                    {paths[name] || <circle cx="12" cy="12" r="10" stroke="#ccc" />}
                 </svg>
             );
         };
@@ -88,21 +118,28 @@
         const App = () => {
             const [currentStep, setCurrentStep] = useState('HOME');
             const [history, setHistory] = useState([]);
+            const [params, setParams] = useState({
+                currency: '', // TWD, FOREIGN
+                auth: '',     // EDDA, PAPER
+                isAuto: false // 是否為系統自動發動
+            });
+            const [searchTerm, setSearchTerm] = useState('');
 
+            // --- 導引流程邏輯 (v43 修正日期判定) ---
             const STEPS = {
                 HOME: {
                     id: "診斷起始",
                     question: "請選擇您的案件目前請款事由：",
                     options: [
-                        { label: "受理請款「請款失敗」", next: "ACC_CHECK", color: "bg-blue-600", icon: "landmark" },
-                        { label: "核保請款「請款失敗」", next: "UW_DECISION", color: "bg-indigo-600", icon: "zap" }
+                        { label: "受理請款「請款失敗」案件處理", next: "ACC_CHECK", color: "bg-blue-600", icon: "landmark" },
+                        { label: "核保請款「請款失敗」案件處理", next: "UW_DECISION", color: "bg-indigo-600", icon: "zap" }
                     ]
                 },
                 ACC_CHECK: {
                     id: "核定狀態",
                     question: "查詢系統：這件保單核定完成了嗎？",
                     options: [
-                        { label: "保單已核定完成", next: "ACC_DATE", color: "bg-blue-600", icon: "fileCheck" },
+                        { label: "保單已核定完成", next: "ACC_DATE", color: "bg-blue-600", icon: "success" },
                         { label: "保單目前尚未核定", next: "RES_ACC_WAIT", color: "bg-slate-500", icon: "clock" }
                     ]
                 },
@@ -110,158 +147,142 @@
                     id: "日期判定",
                     question: "請比對系統中的核定與失敗日期：",
                     options: [
-                        { label: "核定日期 > 請款失敗日期", next: "MODE_ACC_IMMEDIATE", color: "bg-emerald-600", icon: "calendar" },
+                        { label: "核定日期 > 請款失敗日期", next: "CURRENCY_PICK", color: "bg-emerald-600", icon: "calendar" },
                         { label: "核定日期 <= 請款失敗日期", next: "RES_ACC_T3", color: "bg-amber-600", icon: "history" }
                     ]
                 },
                 UW_DECISION: {
                     id: "處理行為",
-                    question: "業務員現在要手動申請重新請款嗎？",
+                    question: "您現在要手動申請重新請款嗎？",
                     options: [
-                        { label: "立即點選「重新請款」按鈕", next: "MODE_UW_MANUAL", color: "bg-indigo-600", icon: "zap" },
-                        { label: "依系統作業時間自動發動請款", next: "MODE_UW_AUTO", color: "bg-slate-500", icon: "timer" }
+                        { label: "我要立即點選「重新請款」按鈕", next: "CURRENCY_PICK", action: () => updateParams('isAuto', false), color: "bg-indigo-600", icon: "zap" },
+                        { label: "依系統作業時間自動發動請款", next: "CURRENCY_PICK", action: () => updateParams('isAuto', true), color: "bg-slate-500", icon: "clock" }
                     ]
                 },
-                MODE_ACC_IMMEDIATE: { id: "模式判定", question: "這件符合即時扣款的三項要件嗎？", options: [{ label: "符合即時扣款條件", next: "TIME_PICK_ACC", color: "bg-emerald-600", icon: "zap" }, { label: "一般扣款流程", next: "RES_GEN_T2", color: "bg-slate-600", icon: "landmark" }] },
-                MODE_UW_MANUAL: { id: "模式判定", question: "這件符合即時扣款三項要件嗎？", options: [{ label: "符合即時扣款條件", next: "TIME_PICK_UW", color: "bg-emerald-600", icon: "zap" }, { label: "一般扣款流程", next: "RES_GEN_T2", color: "bg-slate-600", icon: "landmark" }] },
-                MODE_UW_AUTO: { id: "模式判定", question: "這件符合即時扣款三項要件嗎？", options: [{ label: "符合即時扣款條件", next: "RES_AUTO_T3_INSTANT", color: "bg-emerald-600", icon: "zap" }, { label: "一般扣款流程", next: "RES_AUTO_T3_GENERAL", color: "bg-slate-600", icon: "landmark" }] },
-                
-                TIME_PICK_ACC: {
-                    id: "批次時間",
-                    question: "審查部「壓核定」的時間點？",
+                CURRENCY_PICK: {
+                    id: "幣別判定",
+                    question: "請選擇扣款幣別：",
                     options: [
-                        { label: "中午 12:00 之前完成操作", next: "RES_INST_1200", color: "bg-teal-600", icon: "timer" },
-                        { label: "下午 15:30 之前完成操作", next: "RES_INST_1530", color: "bg-teal-600", icon: "timer" },
-                        { label: "下午 15:30 之後完成操作", next: "RES_INST_NEXT", color: "bg-slate-500", icon: "timer" }
+                        { label: "台幣 (TWD) 扣款", next: "AUTH_METHOD", action: () => updateParams('currency', 'TWD'), color: "bg-emerald-600", icon: "landmark" },
+                        { label: "外幣 (Foreign Currency) 扣款", next: "BANK_SEARCH", action: () => updateParams('currency', 'FOREIGN'), color: "bg-orange-500", icon: "world" }
                     ]
                 },
-                TIME_PICK_UW: {
-                    id: "批次時間",
-                    question: "您「點擊重新請款」的時間點？",
+                AUTH_METHOD: {
+                    id: "授權方式",
+                    question: "授權方式是否為 eDDA 或 網銀雙因？",
                     options: [
-                        { label: "中午 12:00 之前操作", next: "RES_INST_1200", color: "bg-teal-600", icon: "timer" },
-                        { label: "下午 15:30 之前操作", next: "RES_INST_1530", color: "bg-teal-600", icon: "timer" },
-                        { label: "下午 15:30 之後操作", next: "RES_INST_NEXT", color: "bg-slate-500", icon: "timer" }
+                        { label: "是 (eDDA / 網銀雙因)", next: "BANK_SEARCH", action: () => updateParams('auth', 'EDDA'), color: "bg-indigo-600", icon: "zap" },
+                        { label: "否 (紙本授權 / 其他)", next: "BANK_SEARCH", action: () => updateParams('auth', 'PAPER'), color: "bg-slate-500", icon: "calendar" }
                     ]
                 }
+            };
+
+            const updateParams = (key, value) => {
+                setParams(prev => ({ ...prev, [key]: value }));
+            };
+
+            const handleNavigate = (next, action) => {
+                if (action) action();
+                setHistory([...history, currentStep]);
+                setCurrentStep(next);
+                setSearchTerm('');
+            };
+
+            const goBack = () => {
+                const prev = history.pop();
+                setHistory([...history]);
+                setCurrentStep(prev || 'HOME');
+            };
+
+            const reset = () => {
+                setHistory([]);
+                setCurrentStep('HOME');
+                setParams({ currency: '', auth: '', isAuto: false });
+            };
+
+            const filteredBanks = useMemo(() => {
+                const term = searchTerm.toLowerCase();
+                if (!term) return BANK_DATABASE.slice(0, 8);
+                return BANK_DATABASE.filter(b => b.code.includes(term) || b.name.includes(term)).slice(0, 10);
+            }, [searchTerm]);
+
+            const selectBank = (bank) => {
+                let finalType = 'NINTH'; 
+                if (params.currency === 'TWD') {
+                    if (params.auth === 'EDDA' && bank.isInstant) finalType = 'INSTANT';
+                    else if (bank.twdDaily) finalType = 'DAILY';
+                } else {
+                    if (bank.foreignDaily) finalType = 'DAILY';
+                }
+                const resultStep = params.isAuto ? `AUTO_${finalType}` : `MANUAL_${finalType}`;
+                setHistory([...history, currentStep]);
+                setCurrentStep(resultStep);
             };
 
             const RESULTS = {
-                RES_ACC_WAIT: {
-                    title: "等待核定中", badge: "進度暫停中",
-                    desc: "保單目前尚未完成核定。請在核定完成後重新使用本診斷助手，屆時將自動轉換為核保請款時效。",
-                    icon: "warning", color: "text-orange-500"
-                },
-                RES_ACC_T3: {
-                    title: "系統作業等待中", badge: "T+3個工作日發動",
-                    desc: "由於剛扣款失敗，系統將保留作業緩衝時間。預計於受理請款失敗日後第 3 個工作天自動發動。若需提前扣款，請聯繫審查部重新壓核定。",
-                    icon: "clock", color: "text-amber-500"
-                },
-                RES_GEN_T2: {
-                    title: "一般請款時效預估", badge: "2工作日銀行回傳",
-                    desc: "本案採一般流程發動。發動後需等待 2 個工作天處理資料，也就是 2 個工作天後即可在系統查看最終結果。",
-                    icon: "landmark", color: "text-slate-500"
-                },
-                RES_INST_1200: {
-                    title: "即時扣款預估結果", badge: "今日 12:00 銀行回傳",
-                    desc: "符合即時扣款條件。預計於今日中午 12:00 銀行就會回傳結果，請提醒客戶確認帳戶餘額是否充足。",
-                    icon: "success", color: "text-emerald-500"
-                },
-                RES_INST_1530: {
-                    title: "即時扣款預估結果", badge: "今日 15:30 銀行回傳",
-                    desc: "符合即時扣款條件。預計於今日下午 15:30 銀行就會回傳結果，請提醒客戶確認帳戶餘額是否充足。",
-                    icon: "success", color: "text-emerald-500"
-                },
-                RES_INST_NEXT: {
-                    title: "即時扣款預估結果", badge: "次日 12:00 銀行回傳",
-                    desc: "因已過今日批次，系統排定於下一工作日中午 12:00 由銀行回傳最終結果。",
-                    icon: "clock", color: "text-teal-600"
-                },
-                RES_AUTO_T3_INSTANT: {
-                    title: "自動再扣時效", badge: "T+3個工作日銀行回傳",
-                    desc: "【T=扣款失敗日】由系統自動發動扣款，預計於 3 個工作天後的中午 12:00 發動即時扣款，當日銀行即會回傳結果。",
-                    icon: "zap", color: "text-emerald-500"
-                },
-                RES_AUTO_T3_GENERAL: {
-                    title: "自動再扣時效", badge: "T+5個工作日銀行回傳",
-                    desc: "【T=扣款失敗日】由系統自動發動扣款，預計將於 3 個工作天後發動一般流程，發動後需再過 2 個工作天等待銀行回傳結果，總時效約 5 個工作天。",
-                    icon: "landmark", color: "text-slate-400"
-                }
+                RES_ACC_WAIT: { title: "等待核定中", badge: "進度暫停中", color: "text-amber-500", icon: "alert", desc: "保單目前尚未完成核定。請在核定完成後重新進行診斷，時效預估將自動轉換為核保請款模式。" },
+                RES_ACC_T3: { title: "系統作業等待中", badge: "T+3個工作日發動", color: "text-amber-600", icon: "history", desc: "由於剛扣款失敗，系統將保留作業緩衝時間。預計於失敗後第 3 個工作天自動發動。若需提前，請聯繫審查部重新壓核定。" },
+                MANUAL_INSTANT: { title: "即時扣款時效預估", badge: "今日回傳", color: "text-emerald-500", icon: "success", desc: "符合即時扣款三要件。請依操作時間參考批次回傳（12:00 或 15:30，若過 15:30 則隔日中午回傳）。請務必提醒保戶確認帳戶餘額充足。" },
+                MANUAL_DAILY: { title: "一般流程 (每日扣款)", badge: "2個工作日回傳", color: "text-blue-500", icon: "calendar", desc: "本案採一般流程發動。該行庫支援每日扣款，發動後需等待銀行 2 個工作天處理資料，後天即可在系統查看結果。" },
+                MANUAL_NINTH: { title: "一般流程 (逢九扣款)", badge: "下次逢九回傳", color: "text-slate-400", icon: "history", desc: "本案採一般流程發動。該行庫屬逢九扣款，需等待最近的 9/19/29 日發動扣款，扣款完成後即可在系統查看最終結果。" },
+                AUTO_INSTANT: { title: "系統自動再扣 (即時)", badge: "T+3個工作日發動", color: "text-indigo-600", icon: "zap", desc: "由系統自動發動扣款，預計於三個工作天後的中午 12 點發動即時扣款，當天銀行才會回傳結果。" },
+                AUTO_DAILY: { title: "系統自動再扣 (每日)", badge: "總時效約 T+5", color: "text-blue-600", icon: "calendar", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程，發動後續再過兩個工作天，等待銀行會傳結果，總時效約五個工作天。" },
+                AUTO_NINTH: { title: "系統自動再扣 (逢九)", badge: "等待下次逢九作業", color: "text-slate-500", icon: "history", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程，並在最近一次的逢九完成扣款作業。" }
             };
-
-            const handleAction = (next) => { setHistory([...history, currentStep]); setCurrentStep(next); };
-            const goBack = () => { const prev = history.pop(); setHistory([...history]); setCurrentStep(prev || 'HOME'); };
-            const reset = () => { setHistory([]); setCurrentStep('HOME'); };
 
             const stepData = STEPS[currentStep];
             const resultData = RESULTS[currentStep];
 
             return (
                 <div className="app-shell flex flex-col">
-                    
-                    {/* Header: 縮小字體與垂直膠囊式 Home 按鈕 */}
-                    <header className="bg-slate-900 px-8 py-5 sticky top-0 z-40 shadow-lg flex items-center justify-between">
+                    <header className="bg-slate-900 px-8 py-5 sticky top-0 z-40 shadow-lg flex items-center justify-between border-b border-white/10">
                         <div className="flex items-center gap-5">
                             {currentStep !== 'HOME' ? (
                                 <button onClick={goBack} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all text-white btn-active">
                                     <SvgIcon name="arrowLeft" color="white" className="w-5 h-5" />
                                 </button>
                             ) : (
-                                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-xl">
-                                    <SvgIcon name="calculator" color="white" className="w-6 h-6" />
+                                <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
+                                    <SvgIcon name="zap" color="white" className="w-6 h-6" />
                                 </div>
                             )}
                             <div className="flex flex-col">
-                                <h1 className="font-bold text-white tracking-tight text-base md:text-lg">新契約請款時效助手</h1>
+                                <h1 className="font-bold text-white tracking-tight text-base md:text-lg">新契約請款智慧助手</h1>
                                 <div className="flex items-center gap-1.5">
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">發動扣款時間預估</span>
+                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">工作日計算模式 v43</span>
                                 </div>
                             </div>
                         </div>
-                        
-                        {/* 右上角：極微縮垂直式返回按鈕 */}
-                        <button 
-                            onClick={reset} 
-                            className="flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 bg-white/5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all btn-active"
-                        >
+                        <button onClick={reset} className="flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 bg-white/5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all btn-active">
                             <SvgIcon name="home" className="w-3.5 h-3.5" color="currentColor" />
-                            <span className="text-[9px] font-black tracking-tighter">返回首頁</span>
+                            <span className="text-[9px] font-black tracking-tighter uppercase">返回首頁</span>
                         </button>
                     </header>
 
-                    {/* Progress indicator */}
                     {stepData && currentStep !== 'HOME' && (
-                        <div className="bg-slate-50 border-b border-slate-200 px-8 py-2.5 flex items-center justify-between gap-6">
+                        <div className="bg-slate-50 border-b border-slate-200 px-8 py-3.5 flex items-center justify-between gap-6">
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 force-nowrap">
                                 <SvgIcon name="layers" className="w-3 h-3 opacity-30"/> {stepData.id}
                             </span>
                             <div className="flex-1 h-1 bg-slate-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-indigo-600 transition-all duration-700" style={{width: `${(history.length / 5) * 100}%`}}></div>
+                                <div className="h-full bg-indigo-600 transition-all duration-700" style={{width: `${(history.length / 6) * 100}%`}}></div>
                             </div>
                         </div>
                     )}
 
-                    {/* Main Body: 優化問句與按鈕文字 */}
-                    <main className="flex-grow p-8 md:p-12 animate-up flex flex-col no-scrollbar">
+                    <main className="flex-grow p-8 md:p-12 animate-up flex flex-col no-scrollbar overflow-y-auto">
                         {stepData ? (
                             <div className="flex flex-col">
-                                {/* 問句字體輕量化 */}
                                 <h2 className="text-lg md:text-xl font-black text-slate-800 mb-8 tracking-tight force-nowrap">
                                     {stepData.question}
                                 </h2>
                                 <div className="space-y-3.5">
                                     {stepData.options.map((opt, idx) => (
-                                        <button
-                                            key={idx}
-                                            onClick={() => handleAction(opt.next)}
-                                            className="w-full group flex items-center p-5 bg-white border border-slate-200 rounded-[1.25rem] hover:border-indigo-600 hover:bg-indigo-50/30 transition-all btn-active shadow-sm text-left overflow-visible"
-                                        >
-                                            {/* 圖示微縮為 w-3.5 徹底防止擠壓 */}
+                                        <button key={idx} onClick={() => handleNavigate(opt.next, opt.action)} className="w-full group flex items-center p-5 bg-white border border-slate-200 rounded-[1.25rem] hover:border-indigo-600 hover:bg-indigo-50/30 transition-all btn-active shadow-sm text-left overflow-visible">
                                             <div className={`mr-4 p-2.5 rounded-xl transition-colors shadow-sm ${opt.color} text-white shrink-0`}>
                                                 <SvgIcon name={opt.icon} color="white" className="w-3.5 h-3.5" />
                                             </div>
-                                            {/* 字體 14px 並確保單行 */}
                                             <span className={`flex-1 font-bold text-[14px] md:text-base force-nowrap ${opt.color.replace('bg-', 'text-')}`}>
                                                 {opt.label}
                                             </span>
@@ -270,64 +291,77 @@
                                     ))}
                                 </div>
                             </div>
+                        ) : currentStep === 'BANK_SEARCH' ? (
+                            <div className="flex flex-col animate-up">
+                                <h2 className="text-lg md:text-xl font-black text-slate-800 mb-2 tracking-tight">請搜尋扣款行庫</h2>
+                                <p className="text-sm text-slate-400 mb-8">輸入銀行代碼 (如 007) 或 名稱關鍵字</p>
+                                <div className="relative mb-6">
+                                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                        <SvgIcon name="search" className="w-5 h-5 text-slate-300" />
+                                    </div>
+                                    <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="快速搜尋..." className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-lg focus:border-indigo-500 transition-all"/>
+                                </div>
+                                <div className="space-y-2 max-h-[350px] overflow-y-auto no-scrollbar pr-2">
+                                    {filteredBanks.map(b => (
+                                        <button key={b.code} onClick={() => selectBank(b)} className="w-full flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-all btn-active group">
+                                            <div className="flex items-center gap-4">
+                                                <span className="bg-slate-100 px-2.5 py-1 rounded-md text-[11px] font-black text-slate-500 group-hover:bg-white">{b.code}</span>
+                                                <span className="font-bold text-slate-700">{b.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                <span className="text-[10px] font-black text-indigo-600">選擇此行庫</span>
+                                                <SvgIcon name="chevronRight" className="w-3.5 h-3.5 text-indigo-600" />
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         ) : resultData ? (
                             <div className="flex flex-col items-center text-center">
-                                <div className="mb-10 p-10 bg-slate-50 rounded-[3.5rem] shadow-inner relative ring-1 ring-slate-100">
-                                    {/* 修復結果頁面圖示不見的問題 */}
-                                    <SvgIcon name={resultData.icon} className={`w-16 h-16 ${resultData.color}`} color="currentColor" />
-                                    {/* 結論 Badge */}
-                                    <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 px-8 py-3.5 bg-slate-900 rounded-full shadow-2xl border-4 border-white z-10">
-                                        <p className="text-[12px] font-black text-white tracking-wide force-nowrap leading-none">
-                                            {resultData.badge}
-                                        </p>
+                                <div className="mb-10 p-12 bg-slate-50 rounded-[4rem] shadow-inner relative ring-1 ring-slate-100">
+                                    <SvgIcon name={resultData.icon} className={`w-20 h-20 ${resultData.color}`} color="currentColor" />
+                                    <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-10 py-4 bg-slate-900 rounded-full shadow-2xl border-4 border-white z-10">
+                                        <p className="text-[12px] font-black text-white tracking-wide force-nowrap leading-none">{resultData.badge}</p>
                                     </div>
                                 </div>
-                                
                                 <h2 className="text-2xl font-black text-slate-900 mb-6">{resultData.title}</h2>
-                                
                                 <div className="bg-indigo-50 border border-indigo-100 p-8 md:p-10 rounded-[2.5rem] text-left shadow-sm mb-10 w-full">
-                                    <p className="text-[17px] font-bold text-slate-700 leading-relaxed italic">
-                                        {resultData.desc}
-                                    </p>
+                                    <p className="text-lg font-bold text-slate-700 leading-relaxed italic">{resultData.desc}</p>
                                 </div>
-
-                                <button 
-                                    onClick={reset} 
-                                    className="w-full max-w-sm bg-slate-900 text-white py-6 rounded-2xl font-black text-lg hover:bg-black transition-all shadow-xl btn-active flex items-center justify-center gap-3"
-                                >
-                                    <SvgIcon name="home" className="w-5 h-5" color="white"/> 診斷其他案件
+                                <button onClick={reset} className="w-full max-w-sm bg-slate-900 text-white py-6 rounded-2xl font-black text-lg hover:bg-black transition-all shadow-xl btn-active flex items-center justify-center gap-3">
+                                    <SvgIcon name="success" className="w-5 h-5" color="white"/> 重新診斷另一筆案件
                                 </button>
                             </div>
                         ) : null}
                     </main>
 
-                    {/* Footer wall */}
                     <footer className="mt-auto border-t border-slate-100 bg-slate-50/50 p-8 pb-10">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <SvgIcon name="timer" className="w-4 h-4" color="#94a3b8"/>
+                                    <SvgIcon name="clock" className="w-4 h-4" color="#94a3b8"/>
                                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-tighter leading-none">即時扣款回傳批次</p>
                                 </div>
-                                <div className="space-y-2.5 text-[13px] font-bold text-slate-600">
-                                    <div className="flex justify-between border-b border-slate-50 pb-1"><span>12:00 前完成操作</span><span className="text-indigo-600 font-black">中午</span></div>
-                                    <div className="flex justify-between border-b border-slate-50 pb-1"><span>15:30 前完成操作</span><span className="text-indigo-600 font-black">下午</span></div>
+                                <div className="space-y-3 text-[13px] font-bold text-slate-600">
+                                    <div className="flex justify-between border-b border-slate-50 pb-1"><span>12:00 前操作</span><span className="text-indigo-600 font-black">中午</span></div>
+                                    <div className="flex justify-between border-b border-slate-50 pb-1"><span>15:30 前操作</span><span className="text-indigo-600 font-black">下午</span></div>
+                                    <div className="flex justify-between"><span>15:30 後操作</span><span className="text-indigo-600 font-black">隔日中午</span></div>
                                 </div>
                             </div>
                             <div className="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100 shadow-inner text-left">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <SvgIcon name="shield" className="w-4 h-4" color="#6366f1"/>
+                                    <SvgIcon name="success" className="w-4 h-4" color="#6366f1"/>
                                     <p className="text-[10px] font-black text-indigo-500 uppercase tracking-tighter leading-none">即時扣款三要件</p>
                                 </div>
                                 <div className="space-y-2 text-[12px] font-bold text-indigo-700/80 leading-none">
-                                    <div className="flex items-center gap-2"><SvgIcon name="check" className="w-3 h-3" color="#818cf8"/> 台幣案件專屬</div>
-                                    <div className="flex items-center gap-2"><SvgIcon name="check" className="w-3 h-3" color="#818cf8"/> 26 家適用行庫</div>
-                                    <div className="flex items-center gap-2"><SvgIcon name="check" className="w-3 h-3" color="#818cf8"/> eDDA/網銀雙因</div>
+                                    <div className="flex items-center gap-2 force-nowrap"><SvgIcon name="success" className="w-3.5 h-3.5" color="#818cf8"/> 台幣案件專屬</div>
+                                    <div className="flex items-center gap-2 force-nowrap"><SvgIcon name="success" className="w-3.5 h-3.5" color="#818cf8"/> 26 家適用行庫</div>
+                                    <div className="flex items-center gap-2 force-nowrap"><SvgIcon name="success" className="w-3.5 h-3.5" color="#818cf8"/> eDDA/網銀雙因授權</div>
                                 </div>
                             </div>
                         </div>
                         <p className="mt-8 text-[11px] font-black text-slate-300 tracking-[0.4em] uppercase text-center flex items-center justify-center gap-2">
-                            <SvgIcon name="landmark" className="w-3.5 h-3.5 opacity-30" /> 作業版本 v40.0
+                            <SvgIcon name="landmark" className="w-3.5 h-3.5 opacity-30" /> 核心作業邏輯校準版 v43.0
                         </p>
                     </footer>
                 </div>
@@ -339,3 +373,5 @@
     </script>
 </body>
 </html>
+
+```

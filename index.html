@@ -1,4 +1,4 @@
-```html
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -131,8 +131,8 @@
                     id: "診斷起始",
                     question: "請選擇您的案件目前請款事由：",
                     options: [
-                        { label: "受理請款「請款失敗」案件處理", next: "ACC_CHECK", color: "bg-blue-600", icon: "landmark" },
-                        { label: "核保請款「請款失敗」案件處理", next: "UW_DECISION", color: "bg-indigo-600", icon: "zap" }
+                        { label: "受理請款「請款失敗」", next: "ACC_CHECK", color: "bg-blue-600", icon: "landmark" },
+                        { label: "核保請款「請款失敗」", next: "UW_DECISION", color: "bg-indigo-600", icon: "zap" }
                     ]
                 },
                 ACC_CHECK: {
@@ -163,8 +163,8 @@
                     id: "幣別判定",
                     question: "請選擇扣款幣別：",
                     options: [
-                        { label: "台幣 (TWD) 扣款", next: "AUTH_METHOD", action: () => updateParams('currency', 'TWD'), color: "bg-emerald-600", icon: "landmark" },
-                        { label: "外幣 (Foreign Currency) 扣款", next: "BANK_SEARCH", action: () => updateParams('currency', 'FOREIGN'), color: "bg-orange-500", icon: "world" }
+                        { label: "台幣扣款", next: "AUTH_METHOD", action: () => updateParams('currency', 'TWD'), color: "bg-emerald-600", icon: "landmark" },
+                        { label: "外幣扣款", next: "BANK_SEARCH", action: () => updateParams('currency', 'FOREIGN'), color: "bg-orange-500", icon: "world" }
                     ]
                 },
                 AUTH_METHOD: {
@@ -172,7 +172,7 @@
                     question: "授權方式是否為 eDDA 或 網銀雙因？",
                     options: [
                         { label: "是 (eDDA / 網銀雙因)", next: "BANK_SEARCH", action: () => updateParams('auth', 'EDDA'), color: "bg-indigo-600", icon: "zap" },
-                        { label: "否 (紙本授權 / 其他)", next: "BANK_SEARCH", action: () => updateParams('auth', 'PAPER'), color: "bg-slate-500", icon: "calendar" }
+                        { label: "否 (紙本授權/國泰世華網銀直連)", next: "BANK_SEARCH", action: () => updateParams('auth', 'PAPER'), color: "bg-slate-500", icon: "calendar" }
                     ]
                 }
             };
@@ -220,14 +220,14 @@
             };
 
             const RESULTS = {
-                RES_ACC_WAIT: { title: "等待核定中", badge: "進度暫停中", color: "text-amber-500", icon: "alert", desc: "保單目前尚未完成核定。請在核定完成後重新進行診斷，時效預估將自動轉換為核保請款模式。" },
-                RES_ACC_T3: { title: "系統作業等待中", badge: "T+3個工作日發動", color: "text-amber-600", icon: "history", desc: "由於剛扣款失敗，系統將保留作業緩衝時間。預計於失敗後第 3 個工作天自動發動。若需提前，請聯繫審查部重新壓核定。" },
+                RES_ACC_WAIT: { title: "等待核定中", badge: "進度暫停", color: "text-amber-500", icon: "alert", desc: "保單目前尚未完成核定。請在核定完成後重新進行診斷。" },
+                RES_ACC_T3: { title: "系統作業等待中", badge: "T+3個工作日發動", color: "text-amber-600", icon: "history", desc: "由於剛扣款失敗，系統將保留作業緩衝時間。預計於受理請款失敗日後第 3 個工作天自動發動。若需提前，請聯繫審查部重新壓核定。" },
                 MANUAL_INSTANT: { title: "即時扣款時效預估", badge: "今日回傳", color: "text-emerald-500", icon: "success", desc: "符合即時扣款三要件。請依操作時間參考批次回傳（12:00 或 15:30，若過 15:30 則隔日中午回傳）。請務必提醒保戶確認帳戶餘額充足。" },
-                MANUAL_DAILY: { title: "一般流程 (每日扣款)", badge: "2個工作日回傳", color: "text-blue-500", icon: "calendar", desc: "本案採一般流程發動。該行庫支援每日扣款，發動後需等待銀行 2 個工作天處理資料，後天即可在系統查看結果。" },
-                MANUAL_NINTH: { title: "一般流程 (逢九扣款)", badge: "下次逢九回傳", color: "text-slate-400", icon: "history", desc: "本案採一般流程發動。該行庫屬逢九扣款，需等待最近的 9/19/29 日發動扣款，扣款完成後即可在系統查看最終結果。" },
-                AUTO_INSTANT: { title: "系統自動再扣 (即時)", badge: "T+3個工作日發動", color: "text-indigo-600", icon: "zap", desc: "由系統自動發動扣款，預計於三個工作天後的中午 12 點發動即時扣款，當天銀行才會回傳結果。" },
-                AUTO_DAILY: { title: "系統自動再扣 (每日)", badge: "總時效約 T+5", color: "text-blue-600", icon: "calendar", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程，發動後續再過兩個工作天，等待銀行會傳結果，總時效約五個工作天。" },
-                AUTO_NINTH: { title: "系統自動再扣 (逢九)", badge: "等待下次逢九作業", color: "text-slate-500", icon: "history", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程，並在最近一次的逢九完成扣款作業。" }
+                MANUAL_DAILY: { title: "一般流程 (每日扣款)", badge: "2個工作日回傳", color: "text-blue-500", icon: "calendar", desc: "本案採一般流程發動。該行庫為每日扣款，發動後需等待銀行 2 個工作天處理資料，2個工作天即可在系統查看結果。" },
+                MANUAL_NINTH: { title: "一般流程 (逢九扣款)", badge: "下次逢九回傳", color: "text-slate-400", icon: "history", desc: "本案採一般流程發動。該行庫屬逢九扣款，需等待最近的 9/19/29 日發動扣款，當日扣款完成後即可在系統查看最終結果。" },
+                AUTO_INSTANT: { title: "系統自動再扣 (即時)", badge: "T+3個工作日回傳", color: "text-indigo-600", icon: "zap", desc: "由系統自動發動扣款，預計於三個工作天後的中午 12 點發動即時扣款，當天銀行將會回傳結果。" },
+                AUTO_DAILY: { title: "系統自動再扣 (每日)", badge: "T+5個工作日回傳", color: "text-blue-600", icon: "calendar", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程，發動後需等待約兩個工作天，等待銀行會傳結果，總時效約五個工作天。" },
+                AUTO_NINTH: { title: "系統自動再扣 (逢九)", badge: "等待下次逢九扣款", color: "text-slate-500", icon: "history", desc: "由系統自動發動扣款，預計將於三個工作天後發動一般流程，並在最近一次的逢九完成扣款作業。" }
             };
 
             const stepData = STEPS[currentStep];
@@ -250,7 +250,7 @@
                                 <h1 className="font-bold text-white tracking-tight text-base md:text-lg">新契約請款智慧助手</h1>
                                 <div className="flex items-center gap-1.5">
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">工作日計算模式 v43</span>
+                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">發動請款時間預估</span>
                                 </div>
                             </div>
                         </div>
@@ -294,7 +294,7 @@
                         ) : currentStep === 'BANK_SEARCH' ? (
                             <div className="flex flex-col animate-up">
                                 <h2 className="text-lg md:text-xl font-black text-slate-800 mb-2 tracking-tight">請搜尋扣款行庫</h2>
-                                <p className="text-sm text-slate-400 mb-8">輸入銀行代碼 (如 007) 或 名稱關鍵字</p>
+                                <p className="text-sm text-slate-400 mb-8">請輸入銀行代碼 (如 007) 或 名稱關鍵字</p>
                                 <div className="relative mb-6">
                                     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                                         <SvgIcon name="search" className="w-5 h-5 text-slate-300" />
@@ -356,12 +356,12 @@
                                 <div className="space-y-2 text-[12px] font-bold text-indigo-700/80 leading-none">
                                     <div className="flex items-center gap-2 force-nowrap"><SvgIcon name="success" className="w-3.5 h-3.5" color="#818cf8"/> 台幣案件專屬</div>
                                     <div className="flex items-center gap-2 force-nowrap"><SvgIcon name="success" className="w-3.5 h-3.5" color="#818cf8"/> 26 家適用行庫</div>
-                                    <div className="flex items-center gap-2 force-nowrap"><SvgIcon name="success" className="w-3.5 h-3.5" color="#818cf8"/> eDDA/網銀雙因授權</div>
+                                    <div className="flex items-center gap-2 force-nowrap"><SvgIcon name="success" className="w-3.5 h-3.5" color="#818cf8"/> eDDA/網銀雙因</div>
                                 </div>
                             </div>
                         </div>
                         <p className="mt-8 text-[11px] font-black text-slate-300 tracking-[0.4em] uppercase text-center flex items-center justify-center gap-2">
-                            <SvgIcon name="landmark" className="w-3.5 h-3.5 opacity-30" /> 核心作業邏輯校準版 v43.0
+                            <SvgIcon name="landmark" className="w-3.5 h-3.5 opacity-30" /> 作業版本 v43.0
                         </p>
                     </footer>
                 </div>
@@ -374,4 +374,4 @@
 </body>
 </html>
 
-```
+

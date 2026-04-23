@@ -320,6 +320,18 @@
                                                 <p className="text-slate-500 mt-1">註：若核保請款失敗，需待次ㄧ工作日，才能點選重新請款。</p>
                                             </div>
                                         )
+                                    },
+                                    {
+                                        q: "新契約扣款失敗要怎麼改匯款？",
+                                        a: (
+                                            <ul className="list-decimal pl-5 space-y-1">
+                                                <li>路徑：NAP/新契約進度查詢/保費處理進度。</li>
+                                                <li>點選「變更繳費方式」，再點選「首期改匯撥」，最後點選「確認變更」。</li>
+                                                  <p className="text-slate-500 mt-1">註：不可變更繳費方式之情境說明：</p>
+                                                1. 請款狀態為「請款中、扣款成功」、核保狀態為「謝絕、註銷」之案件，無法變更繳費方式。</p>
+                                                2.（1）商品已停售-不可改匯款。（2）要被保人未滿7歲、被保人增減齡、高保額-無法透過NAP改匯款。。</p>
+                                            </ul>
+                                        )
                                     }
                                 ].map((item, idx) => (
                                     <div key={idx} className="bg-slate-50 rounded-2xl overflow-hidden border border-slate-100">

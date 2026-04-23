@@ -160,7 +160,7 @@
                     id: "處理行為",
                     question: "業務員現在是否要手動申請重新請款嗎？",
                     options: [
-                        { label: "是，業務員要自行點選「重新請款」", next: "CURRENCY_PICK", action: () => updateParams('isAuto', false), color: "bg-indigo-600", icon: "zap" },
+                        { label: "是，業務員要自行點選重新請款", next: "CURRENCY_PICK", action: () => updateParams('isAuto', false), color: "bg-indigo-600", icon: "zap" },
                         { label: "否，依系統作業時間自動發動請款", next: "CURRENCY_PICK", action: () => updateParams('isAuto', true), color: "bg-slate-500", icon: "clock" }
                     ]
                 },

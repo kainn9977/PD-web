@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新契約請款智慧助手 v45</title>
+    <title>新契約請款智慧助手 v46</title>
     <!-- 基礎佈局與渲染引擎 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -57,7 +57,6 @@
     <script type="text/babel">
         const { useState, useMemo } = React;
 
-        // --- 全行庫邏輯數據 (v45 修正將來銀行支援即時扣款) ---
         const BANK_DATABASE = [
             {"code": "004", "name": "台灣銀行", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
             {"code": "005", "name": "土地銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
@@ -92,7 +91,7 @@
             {"code": "810", "name": "星展銀行", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
             {"code": "812", "name": "台新銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
             {"code": "816", "name": "安泰銀行", "isInstant": false, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
-            {"code": "823", "name": "將來銀行", "isInstant": true, "twdDaily": true, "twdNinth": false}, // 修正為支援即時扣款
+            {"code": "823", "name": "將來銀行", "isInstant": true, "twdDaily": true, "twdNinth": false},
             {"code": "ACH", "name": "農漁會/信用合作社", "isInstant": false, "twdDaily": true, "twdNinth": false},
             {"code": "822", "name": "中國信託", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false}
         ];
@@ -107,11 +106,13 @@
                 landmark: <><path d="M3 22h18" /><path d="M6 18v-7" /><path d="M11 18v-7" /><path d="M16 18v-7" /><path d="M3 11l9-8 9 8" /></>,
                 arrowLeft: <path d="M19 12H5M12 19l-7-7 7-7" />,
                 chevronRight: <path d="M9 18l6-6-6-6" />,
+                chevronDown: <path d="m6 9 6 6 6-6" />,
                 success: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>,
                 alert: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>,
                 world: <><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>,
                 history: <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></>,
-                layers: <><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /></>
+                layers: <><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /></>,
+                help: <><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></>
             };
             return (
                 <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -123,117 +124,36 @@
         const App = () => {
             const [currentStep, setCurrentStep] = useState('HOME');
             const [history, setHistory] = useState([]);
-            const [params, setParams] = useState({
-                currency: '', // TWD, FOREIGN
-                auth: '',     // EDDA, PAPER
-                isAuto: false // 是否為系統自動發動
-            });
+            const [params, setParams] = useState({ currency: '', auth: '', isAuto: false });
             const [searchTerm, setSearchTerm] = useState('');
+            const [expandedFaq, setExpandedFaq] = useState(null);
 
             // --- 導引流程邏輯 ---
             const STEPS = {
-                HOME: {
-                    id: "診斷起始",
-                    question: "請選擇您的案件目前請款事由：",
-                    options: [
-                        { label: "受理請款「請款失敗」", next: "ACC_CHECK", color: "bg-blue-600", icon: "landmark" },
-                        { label: "核保請款「請款失敗」", next: "UW_DECISION", color: "bg-indigo-600", icon: "zap" }
-                    ]
-                },
-                ACC_CHECK: {
-                    id: "核定狀態",
-                    question: "查詢系統：這件保單核定完成了嗎？",
-                    options: [
-                        { label: "保單已核定完成", next: "ACC_DATE", color: "bg-blue-600", icon: "success" },
-                        { label: "保單目前尚未核定", next: "RES_ACC_WAIT", color: "bg-slate-500", icon: "clock" }
-                    ]
-                },
-                ACC_DATE: {
-                    id: "日期判定",
-                    question: "請比對系統中的核定與請款失敗日期：",
-                    options: [
-                        { label: "核定日期 > 請款失敗日期", next: "CURRENCY_PICK", color: "bg-emerald-600", icon: "calendar" },
-                        { label: "核定日期 <= 請款失敗日期", next: "RES_ACC_T3", color: "bg-amber-600", icon: "history" }
-                    ]
-                },
-                UW_DECISION: {
-                    id: "處理行為",
-                    question: "業務員現在是否要手動申請重新請款？",
-                    options: [
-                        { label: "是，業務員要自行點選重新請款", next: "CURRENCY_PICK", action: () => updateParams('isAuto', false), color: "bg-indigo-600", icon: "zap" },
-                        { label: "否，依系統作業時間自動發動請款", next: "CURRENCY_PICK", action: () => updateParams('isAuto', true), color: "bg-slate-500", icon: "clock" }
-                    ]
-                },
-                CURRENCY_PICK: {
-                    id: "幣別判定",
-                    question: "請選擇扣款幣別：",
-                    options: [
-                        { label: "台幣扣款", next: "AUTH_METHOD", action: () => updateParams('currency', 'TWD'), color: "bg-emerald-600", icon: "landmark" },
-                        { label: "外幣扣款", next: "BANK_SEARCH", action: () => updateParams('currency', 'FOREIGN'), color: "bg-orange-500", icon: "world" }
-                    ]
-                },
-                AUTH_METHOD: {
-                    id: "授權方式",
-                    question: "授權方式是否為 eDDA 或 網銀雙因？",
-                    options: [
-                        { label: "是 (eDDA / 網銀雙因)", next: "BANK_SEARCH", action: () => updateParams('auth', 'EDDA'), color: "bg-indigo-600", icon: "zap" },
-                        { label: "否 (紙本授權 / 國泰世華網銀直連)", next: "BANK_SEARCH", action: () => updateParams('auth', 'PAPER'), color: "bg-slate-500", icon: "calendar" }
-                    ]
-                }
-            };
-
-            const updateParams = (key, value) => {
-                setParams(prev => ({ ...prev, [key]: value }));
-            };
-
-            const handleNavigate = (next, action) => {
-                if (action) action();
-                setHistory([...history, currentStep]);
-                setCurrentStep(next);
-                setSearchTerm('');
-            };
-
-            const goBack = () => {
-                const prev = history.pop();
-                setHistory([...history]);
-                setCurrentStep(prev || 'HOME');
-            };
-
-            const reset = () => {
-                setHistory([]);
-                setCurrentStep('HOME');
-                setParams({ currency: '', auth: '', isAuto: false });
-            };
-
-            // --- 核心過濾邏輯：幣別支援判定 ---
-            const filteredBanks = useMemo(() => {
-                let base = BANK_DATABASE;
-                
-                if (params.currency === 'FOREIGN') {
-                    // 外幣不支援清單
-                    const unsupportedForeign = ['048', '081', '101', '103', '147', '823', '700', 'ACH'];
-                    base = base.filter(b => !unsupportedForeign.includes(b.code));
-                } else if (params.currency === 'TWD') {
-                    // 台幣不支援清單 (v45 移除 823 的過濾)
-                    base = base.filter(b => b.code !== 'ACH_DISABLED_EXAMPLE'); 
-                }
-
-                const term = searchTerm.toLowerCase();
-                if (!term) return base.slice(0, 10);
-                return base.filter(b => b.code.includes(term) || b.name.includes(term)).slice(0, 12);
-            }, [searchTerm, params.currency]);
-
-            const selectBank = (bank) => {
-                let finalType = 'NINTH'; 
-                if (params.currency === 'TWD') {
-                    if (params.auth === 'EDDA' && bank.isInstant) finalType = 'INSTANT';
-                    else if (bank.twdDaily) finalType = 'DAILY';
-                } else {
-                    if (bank.foreignDaily) finalType = 'DAILY';
-                }
-                const resultStep = params.isAuto ? `AUTO_${finalType}` : `MANUAL_${finalType}`;
-                setHistory([...history, currentStep]);
-                setCurrentStep(resultStep);
+                HOME: { id: "診斷起始", question: "請選擇您的案件目前請款事由：", options: [
+                    { label: "受理請款「請款失敗」", next: "ACC_CHECK", color: "bg-blue-600", icon: "landmark" },
+                    { label: "核保請款「請款失敗」", next: "UW_DECISION", color: "bg-indigo-600", icon: "zap" }
+                ]},
+                ACC_CHECK: { id: "核定狀態", question: "查詢系統：這件保單核定完成了嗎？", options: [
+                    { label: "保單已核定完成", next: "ACC_DATE", color: "bg-blue-600", icon: "success" },
+                    { label: "保單目前尚未核定", next: "RES_ACC_WAIT", color: "bg-slate-500", icon: "clock" }
+                ]},
+                ACC_DATE: { id: "日期判定", question: "請比對系統中的核定與請款失敗日期：", options: [
+                    { label: "核定日期 > 請款失敗日期", next: "CURRENCY_PICK", color: "bg-emerald-600", icon: "calendar" },
+                    { label: "核定日期 <= 請款失敗日期", next: "RES_ACC_T3", color: "bg-amber-600", icon: "history" }
+                ]},
+                UW_DECISION: { id: "處理行為", question: "業務員現在是否要手動申請重新請款？", options: [
+                    { label: "是，業務員要自行點選重新請款", next: "CURRENCY_PICK", action: () => updateParams('isAuto', false), color: "bg-indigo-600", icon: "zap" },
+                    { label: "否，依系統作業時間自動發動請款", next: "CURRENCY_PICK", action: () => updateParams('isAuto', true), color: "bg-slate-500", icon: "clock" }
+                ]},
+                CURRENCY_PICK: { id: "幣別判定", question: "請選擇扣款幣別：", options: [
+                    { label: "台幣扣款", next: "AUTH_METHOD", action: () => updateParams('currency', 'TWD'), color: "bg-emerald-600", icon: "landmark" },
+                    { label: "外幣扣款", next: "BANK_SEARCH", action: () => updateParams('currency', 'FOREIGN'), color: "bg-orange-500", icon: "world" }
+                ]},
+                AUTH_METHOD: { id: "授權方式", question: "授權方式是否為 eDDA 或 網銀雙因？", options: [
+                    { label: "是 (eDDA / 網銀雙因)", next: "BANK_SEARCH", action: () => updateParams('auth', 'EDDA'), color: "bg-indigo-600", icon: "zap" },
+                    { label: "否 (紙本授權 / 國泰世華網銀直連)", next: "BANK_SEARCH", action: () => updateParams('auth', 'PAPER'), color: "bg-slate-500", icon: "calendar" }
+                ]}
             };
 
             const RESULTS = {
@@ -245,6 +165,30 @@
                 AUTO_INSTANT: { title: "系統自動再扣 (即時)", badge: "T+3個工作日銀行回傳", color: "text-indigo-600", icon: "zap", desc: "［T=扣款失敗日］由系統自動發動扣款，預計於三個工作天後的中午 12 點發動即時扣款，當日銀行將會回傳扣款結果，並可在NAP上查看最新進度。" },
                 AUTO_DAILY: { title: "系統自動再扣 (每日)", badge: "T+5個工作日銀行回傳", color: "text-blue-600", icon: "calendar", desc: "［T=扣款失敗日］由系統自動發動扣款，預計將於三個工作天後發動請款，發動後需2個工作天等待銀行回傳扣款結果，總時長約五個工作天。" },
                 AUTO_NINTH: { title: "系統自動再扣 (逢九)", badge: "等待下次逢九作業", color: "text-slate-500", icon: "history", desc: "由系統自動發動扣款，預計將於扣款失敗日後加三個工作天發動請款，並在發動日的最近一次逢九完成扣款作業。" }
+            };
+
+            const updateParams = (key, value) => { setParams(prev => ({ ...prev, [key]: value })); };
+            const handleNavigate = (next, action) => { if (action) action(); setHistory([...history, currentStep]); setCurrentStep(next); setSearchTerm(''); };
+            const goBack = () => { const prev = history.pop(); setHistory([...history]); setCurrentStep(prev || 'HOME'); };
+            const reset = () => { setHistory([]); setCurrentStep('HOME'); setParams({ currency: '', auth: '', isAuto: false }); };
+
+            const filteredBanks = useMemo(() => {
+                let base = BANK_DATABASE;
+                if (params.currency === 'FOREIGN') {
+                    base = base.filter(b => !['048', '081', '101', '103', '147', '823', '700', 'ACH'].includes(b.code));
+                }
+                const term = searchTerm.toLowerCase();
+                return term ? base.filter(b => b.code.includes(term) || b.name.includes(term)).slice(0, 12) : base.slice(0, 10);
+            }, [searchTerm, params.currency]);
+
+            const selectBank = (bank) => {
+                let finalType = 'NINTH'; 
+                if (params.currency === 'TWD') {
+                    if (params.auth === 'EDDA' && bank.isInstant) finalType = 'INSTANT';
+                    else if (bank.twdDaily) finalType = 'DAILY';
+                } else if (bank.foreignDaily) finalType = 'DAILY';
+                setCurrentStep(params.isAuto ? `AUTO_${finalType}` : `MANUAL_${finalType}`);
+                setHistory([...history, currentStep]);
             };
 
             const stepData = STEPS[currentStep];
@@ -264,10 +208,10 @@
                                 </div>
                             )}
                             <div className="flex flex-col">
-                                <h1 className="font-bold text-white tracking-tight text-base md:text-lg">新契約請款智慧助手</h1>
-                                <div className="flex items-center gap-1.5">
+                                <h1 className="font-bold text-white tracking-tight text-base md:text-lg leading-tight">新契約請款智慧助手</h1>
+                                <div className="flex items-center gap-1.5 mt-0.5">
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">扣款時間預估</span>
+                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">發動請款時間預估</span>
                                 </div>
                             </div>
                         </div>
@@ -311,16 +255,14 @@
                         ) : currentStep === 'BANK_SEARCH' ? (
                             <div className="flex flex-col animate-up">
                                 <h2 className="text-lg md:text-xl font-black text-slate-800 mb-2 tracking-tight">請搜尋扣款行庫</h2>
-                                <p className="text-sm text-slate-400 mb-8">
-                                    幣別：{params.currency === 'TWD' ? '台幣' : '外幣'} ｜目前僅列出部分銀行，如未找到，請輸入銀行代碼（如 007）或名稱關鍵字搜尋。
-                                </p>
+                                <p className="text-sm text-slate-400 mb-8">幣別：{params.currency === 'TWD' ? '台幣' : '外幣'} ｜ 請直接輸入銀行代碼 (如 007) 或 名稱搜尋</p>
                                 <div className="relative mb-6">
                                     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                                         <SvgIcon name="search" className="w-5 h-5 text-slate-300" />
                                     </div>
-                                    <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="快速搜尋銀行代碼或名稱" className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-lg focus:border-indigo-500 transition-all"/>
+                                    <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="搜尋行庫代碼或名稱" className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold text-lg focus:border-indigo-500 transition-all"/>
                                 </div>
-                                <div className="space-y-2 max-h-[350px] overflow-y-auto no-scrollbar pr-2">
+                                <div className="space-y-2 max-h-[300px] overflow-y-auto no-scrollbar pr-2">
                                     {filteredBanks.map(b => (
                                         <button key={b.code} onClick={() => selectBank(b)} className="w-full flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl hover:bg-indigo-50 hover:border-indigo-200 transition-all btn-active group">
                                             <div className="flex items-center gap-4">
@@ -333,9 +275,6 @@
                                             </div>
                                         </button>
                                     ))}
-                                    {filteredBanks.length === 0 && (
-                                        <div className="py-12 text-center text-slate-400 italic">查無行庫或該行庫無提供該幣別之扣款服務，請確認搜尋關鍵字</div>
-                                    )}
                                 </div>
                             </div>
                         ) : resultData ? (
@@ -355,6 +294,57 @@
                                 </button>
                             </div>
                         ) : null}
+
+                        {/* --- 常見問題欄位 (Accordion) --- */}
+                        <div className="mt-16 border-t border-slate-100 pt-10">
+                            <div className="flex items-center gap-2 mb-6">
+                                <SvgIcon name="help" className="w-5 h-5 text-indigo-600" />
+                                <h3 className="text-lg font-black text-slate-800">常見問題 FAQ</h3>
+                            </div>
+                            <div className="space-y-3">
+                                {[
+                                    {
+                                        q: "為什麼 NAP / 進度查詢，沒有「重新請款」的按鈕？",
+                                        a: (
+                                            <ul className="list-decimal pl-5 space-y-1">
+                                                <li>確認請款事由：</li>
+                                                <li>1.請款事由為受理請款，無法申請重新請款。</li>
+                                                <li>2.請款事由為核保請款，第一次扣款會由系統自動發動，故無按鈕，無需手動申請重新請款。</li>
+                                            </ul>
+                                        )
+                                    },
+                                    {
+                                        q: "授權管道為信用卡，扣款失敗後什麼時候會再扣款？",
+                                        a: (
+                                            <div>
+                                                <p className="font-bold text-indigo-700">大原則：發動請款後，隔日銀行回傳結果。</p>
+                                                <p className="text-slate-500 mt-1">註：若核保請款失敗，需待次ㄧ工作日，才能點選重新請款。</p>
+                                            </div>
+                                        )
+                                    }
+                                ].map((item, idx) => (
+                                    <div key={idx} className="bg-slate-50 rounded-2xl overflow-hidden border border-slate-100">
+                                        <button 
+                                            onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
+                                            className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-100 transition-colors"
+                                        >
+                                            <span className="font-bold text-slate-700 text-sm">{item.q}</span>
+                                            <SvgIcon 
+                                                name="chevronDown" 
+                                                className={`w-4 h-4 text-slate-400 transition-transform ${expandedFaq === idx ? 'rotate-180' : ''}`} 
+                                            />
+                                        </button>
+                                        {expandedFaq === idx && (
+                                            <div className="px-6 pb-5 text-sm text-slate-600 leading-relaxed animate-up">
+                                                <div className="bg-white p-4 rounded-xl border border-slate-200">
+                                                    {item.a}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </main>
 
                     <footer className="mt-auto border-t border-slate-100 bg-slate-50/50 p-8 pb-10">
@@ -378,12 +368,12 @@
                                 <div className="space-y-2 text-[12px] font-bold text-indigo-700/80 leading-none">
                                     <div className="flex items-center gap-2 force-nowrap"><SvgIcon name="success" className="w-3.5 h-3.5" color="#818cf8"/> 台幣核保請款</div>
                                     <div className="flex items-center gap-2 force-nowrap"><SvgIcon name="success" className="w-3.5 h-3.5" color="#818cf8"/> 26 家適用行庫</div>
-                                    <div className="flex items-center gap-2 force-nowrap"><SvgIcon name="success" className="w-3.5 h-3.5" color="#818cf8"/> 需透過票交所之電子授權（eDDA/網銀雙因）</div>
+                                    <div className="flex items-center gap-2 force-nowrap"><SvgIcon name="success" className="w-3.5 h-3.5" color="#818cf8"/> 電子授權（eDDA/網銀雙因）</div>
                                 </div>
                             </div>
                         </div>
                         <p className="mt-8 text-[11px] font-black text-slate-300 tracking-[0.4em] uppercase text-center flex items-center justify-center gap-2">
-                            <SvgIcon name="landmark" className="w-3.5 h-3.5 opacity-30" /> 作業版本 v45.0
+                            <SvgIcon name="landmark" className="w-3.5 h-3.5 opacity-30" /> 作業版本 v46.0
                         </p>
                     </footer>
                 </div>
@@ -395,4 +385,5 @@
     </script>
 </body>
 </html>
+
 

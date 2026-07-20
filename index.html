@@ -1,15 +1,15 @@
-
+```html
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新契約請款智慧助手 v46</title>
-    <!-- 基礎佈局與渲染引擎 -->
+    <title>新契約請款智慧助手 v47</title>
+    <!-- 企業級高可用性 CDN 載入 (解決公司內網阻擋與載入錯誤問題) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.20/babel.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
         
@@ -49,6 +49,7 @@
 
         .btn-active:active { transform: scale(0.99); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body>
@@ -57,6 +58,7 @@
     <script type="text/babel">
         const { useState, useMemo } = React;
 
+        // --- 全行庫邏輯數據 (將來銀行 823 支援即時扣款與台幣扣款) ---
         const BANK_DATABASE = [
             {"code": "004", "name": "台灣銀行", "isInstant": true, "twdDaily": false, "foreignDaily": false, "twdNinth": true, "foreignNinth": true},
             {"code": "005", "name": "土地銀行", "isInstant": true, "twdDaily": true, "foreignDaily": true, "twdNinth": false, "foreignNinth": false},
@@ -142,8 +144,8 @@
                     { label: "核定日期 > 請款失敗日期", next: "CURRENCY_PICK", color: "bg-emerald-600", icon: "calendar" },
                     { label: "核定日期 <= 請款失敗日期", next: "RES_ACC_T3", color: "bg-amber-600", icon: "history" }
                 ]},
-                UW_DECISION: { id: "處理行為", question: "業務員現在是否要手動申請重新請款？", options: [
-                    { label: "是，業務員要自行點選重新請款", next: "CURRENCY_PICK", action: () => updateParams('isAuto', false), color: "bg-indigo-600", icon: "zap" },
+                UW_DECISION: { id: "處理行為", question: "業務員現在是否要手動申請重新請款嗎？", options: [
+                    { label: "是，業務員要自行點選「重新請款」按鈕", next: "CURRENCY_PICK", action: () => updateParams('isAuto', false), color: "bg-indigo-600", icon: "zap" },
                     { label: "否，依系統作業時間自動發動請款", next: "CURRENCY_PICK", action: () => updateParams('isAuto', true), color: "bg-slate-500", icon: "clock" }
                 ]},
                 CURRENCY_PICK: { id: "幣別判定", question: "請選擇扣款幣別：", options: [
@@ -162,7 +164,7 @@
                 MANUAL_INSTANT: { title: "即時扣款", badge: "依作業時間推算銀行回傳時間", color: "text-emerald-500", icon: "success", desc: "符合即時扣款三要件。請依核定時間或重新請款時間，參考批次扣款的時間（12:00 、 15:30 ，或隔日中午12:00）。請務必提醒保戶確認帳戶餘額充足。" },
                 MANUAL_DAILY: { title: "一般流程 (每日扣款)", badge: "2個工作日銀行回傳", color: "text-blue-500", icon: "calendar", desc: "該行庫為每日扣款，發動請款後需 2 個工作天等待銀行回傳扣款結果，當日扣款完成後即可在NAP上查看結果。" },
                 MANUAL_NINTH: { title: "一般流程 (逢九扣款)", badge: "下次逢九回傳", color: "text-slate-400", icon: "history", desc: "該行庫為逢九扣款，將於最近的 9/19/29 日扣款，當日扣款完成後即可在NAP上查看結果。" },
-                AUTO_INSTANT: { title: "系統自動再扣 (即時)", badge: "T+3個工作日銀行回傳", color: "text-indigo-600", icon: "zap", desc: "［T=扣款失敗日］由系統自動發動扣款，預計於三個工作天後的中午 12 點發動即時扣款，當日銀行將會回傳扣款結果，並可在NAP上查看最新進度。" },
+                AUTO_INSTANT: { title: "系統自動再扣 (即時)", badge: "T+3個工作日銀行回傳", color: "text-indigo-600", icon: "zap", desc: "［T=扣款失敗日］由系統自動發動扣款，預計於三個工作天後的中午 12 點發動即時扣款，當天銀行將會回傳扣款結果，並可在NAP上查看最新進度。" },
                 AUTO_DAILY: { title: "系統自動再扣 (每日)", badge: "T+5個工作日銀行回傳", color: "text-blue-600", icon: "calendar", desc: "［T=扣款失敗日］由系統自動發動扣款，預計將於三個工作天後發動請款，發動後需2個工作天等待銀行回傳扣款結果，總時長約五個工作天。" },
                 AUTO_NINTH: { title: "系統自動再扣 (逢九)", badge: "等待下次逢九作業", color: "text-slate-500", icon: "history", desc: "由系統自動發動扣款，預計將於扣款失敗日後加三個工作天發動請款，並在發動日的最近一次逢九完成扣款作業。" }
             };
@@ -211,7 +213,7 @@
                                 <h1 className="font-bold text-white tracking-tight text-base md:text-lg leading-tight">新契約請款智慧助手</h1>
                                 <div className="flex items-center gap-1.5 mt-0.5">
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">發動請款時間預估</span>
+                                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest leading-none">發動請款時間預估 v47</span>
                                 </div>
                             </div>
                         </div>
@@ -304,10 +306,10 @@
                             <div className="space-y-3">
                                 {[
                                     {
-                                        q: "為什麼 NAP / 進度查詢，沒有「重新請款」的按鈕？",
+                                        q: "為什麼受理請款失敗，路徑：NAP/進度查詢，沒有「重新請款」的按鈕？",
                                         a: (
                                             <ul className="list-decimal pl-5 space-y-1">
-                                                <li>請款事由為受理請款，無法申請重新請款。</li>
+                                                <li>受理請款失敗後，須待保單核定後，系統即會自動發動請款。</li>
                                                 <li>請款事由為核保請款，第一次扣款會由系統自動發動，故無按鈕，無需手動申請重新請款。</li>
                                             </ul>
                                         )
@@ -327,7 +329,7 @@
                                             <ul className="list-decimal pl-5 space-y-1">
                                                 <li>路徑：NAP/新契約進度查詢/保費處理進度。</li>
                                                 <li>點選「變更繳費方式」，再點選「首期改匯撥」，最後點選「確認變更」。</li>
-                                                <p className="text-slate-500 mt-1">註：無法透過NAP改匯款之情境說明：</p>
+                                                <p className="text-slate-500 mt-1 font-bold">註：無法透過NAP改匯款之情境說明：</p>
                                                 <p className="text-slate-500 mt-1"> 1.請款狀態為「請款中、扣款成功」。</p>
                                                 <p className="text-slate-500 mt-1"> 2.核保狀態為「謝絕、註銷」之案件。</p>
                                                 <p className="text-slate-500 mt-1"> 3.商品已停售。</p>
@@ -348,28 +350,11 @@
                                         a: (
                                             <div>
                                                 <p className="font-bold text-indigo-700">[個案]請業務員寫簡覆表提供如該帳戶存摺無現金之證明，由保費管理科於系統申請「預掛失敗」。</p>
-                                                <p className="text-slate-500 mt-1">註：請業務員務必與保戶完整說明處理方式，避免重複扣款。</p>
-                                            </div>
-                                        )
-                                    },
-                                    {
-                                        q: "核印完成後，什麼時候會發動請款？",
-                                        a: (
-                                            <div>
-                                                <p>核印完成後，會依行庫為「每日行庫」或「逢九行庫」去發動請款。</p>
-                                            </div>
-                                        )
-                                    },
-                                    {
-                                        q: "保戶說明帳戶有錢，為何請款失敗原因為「存款不足」？",
-                                        a: (
-                                            <div>
-                                                <p>請保戶自行與銀行確認是否有圈存的帳務，導致扣款失敗。</p>
                                             </div>
                                         )
                                     }
                                 ].map((item, idx) => (
-                                    <div key={idx} className="bg-slate-50 rounded-2xl overflow-hidden border border-slate-100">
+                                    <div key={idx} className="bg-slate-50 rounded-2xl overflow-hidden border border-slate-200">
                                         <button 
                                             onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
                                             className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-100 transition-colors"
@@ -403,7 +388,7 @@
                                 <div className="space-y-3 text-[13px] font-bold text-slate-600">
                                     <div className="flex justify-between border-b border-slate-50 pb-1"><span>12:00 前完成操作</span><span className="text-indigo-600 font-black">中午回傳</span></div>
                                     <div className="flex justify-between border-b border-slate-50 pb-1"><span>15:30 前完成操作</span><span className="text-indigo-600 font-black">下午回傳</span></div>
-                                    <div className="flex justify-between"><span>15:30 後完成操作</span><span className="text-indigo-600 font-black">隔日中午</span></div>
+                                    <div className="flex justify-between"><span>15:30 後操作</span><span className="text-indigo-600 font-black">隔日中午</span></div>
                                 </div>
                             </div>
                             <div className="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100 shadow-inner text-left">
@@ -419,7 +404,7 @@
                             </div>
                         </div>
                         <p className="mt-8 text-[11px] font-black text-slate-300 tracking-[0.4em] uppercase text-center flex items-center justify-center gap-2">
-                            <SvgIcon name="landmark" className="w-3.5 h-3.5 opacity-30" /> 作業版本 v46.0
+                            <SvgIcon name="landmark" className="w-3.5 h-3.5 opacity-30" /> 作業版本 v47.0
                         </p>
                     </footer>
                 </div>
@@ -431,5 +416,3 @@
     </script>
 </body>
 </html>
-
-
